@@ -26,10 +26,10 @@ export default function HomePage() {
   }, []);
 
   const trendingTopics = [
-    '2024 최고의 K-POP 여자 아이돌',
+    '2026 최고의 K-POP 여자 아이돌',
     '서울 최고의 가성비 오마카세',
     '역대 최고의 넷플릭스 한국 드라마',
-    '2024 올해의 게임',
+    '2026 올해의 게임',
   ];
 
   const handleGenerate = async () => {
