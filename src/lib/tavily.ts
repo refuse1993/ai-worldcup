@@ -31,7 +31,7 @@ interface WikipediaPage {
 /**
  * Wikipedia에서 이미지와 설명 가져오기 (최적화: 타임아웃 5초)
  */
-async function getWikipediaInfo(name: string): Promise<{
+export async function getWikipediaInfo(name: string): Promise<{
   imageUrl: string;
   description: string;
 } | null> {
