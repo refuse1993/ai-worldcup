@@ -219,7 +219,7 @@ export default function HomePage() {
           )}
 
           {/* 특징 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
                 icon: Search,
@@ -252,7 +252,7 @@ export default function HomePage() {
                 </div>
               );
             })}
-          </div>
+          </div> */}
 
           {/* 하단 광고 */}
           {/* <AdBannerHorizontal /> */}
