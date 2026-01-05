@@ -2,34 +2,9 @@
 
 import { useEffect } from 'react';
 
-/**
- * Google AdSense 광고 배너 컴포넌트
- *
- * 사용법:
- * 1. AdSense 승인 후 광고 코드 받기
- * 2. .env.local에 NEXT_PUBLIC_ADSENSE_ID 추가
- * 3. 원하는 페이지에 <AdBanner /> 삽입
- */
-
 interface AdBannerProps {
-  /**
-   * 광고 슬롯 ID (AdSense에서 생성)
-   * 예: "1234567890"
-   */
   adSlot?: string;
-
-  /**
-   * 광고 형식
-   * - auto: 반응형 (추천)
-   * - horizontal: 가로형
-   * - vertical: 세로형
-   * - rectangle: 사각형
-   */
   adFormat?: 'auto' | 'horizontal' | 'vertical' | 'rectangle';
-
-  /**
-   * 전체 너비 사용 여부
-   */
   fullWidthResponsive?: boolean;
 }
 
@@ -51,9 +26,15 @@ export default function AdBanner({
     }
   }, [adsenseId]);
 
-  // AdSense ID가 없으면 표시하지 않음
+  // AdSense ID가 없으면 placeholder 표시
   if (!adsenseId) {
-    return null;
+    return (
+      <div className="my-4 flex justify-center">
+        <div className="w-full max-w-5xl h-24 glass rounded-xl flex items-center justify-center">
+          <span className="text-xs text-slate-500 uppercase tracking-wider">Advertisement</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -70,15 +51,28 @@ export default function AdBanner({
   );
 }
 
-/**
- * 사용 예시:
- *
- * // 1. 메인 페이지 상단
- * <AdBanner adSlot="1234567890" />
- *
- * // 2. 게임 페이지 중간 (라운드 전환 시)
- * <AdBanner adSlot="9876543210" adFormat="horizontal" />
- *
- * // 3. 결과 페이지 하단
- * <AdBanner adSlot="1122334455" adFormat="rectangle" />
- */
+// 배너 광고 (상단/하단)
+export function AdBannerHorizontal({ className = '' }: { className?: string }) {
+  return (
+    <div className={`w-full flex justify-center py-4 ${className}`}>
+      <div className="max-w-5xl w-full">
+        <div className="bg-gradient-to-r from-slate-800/40 to-slate-700/40 backdrop-blur-sm rounded-xl border border-slate-600/20 p-4 shadow-lg">
+          <div className="text-xs text-slate-400 mb-2 text-center tracking-wider">ADVERTISEMENT</div>
+          <AdBanner adSlot="1234567890" adFormat="auto" fullWidthResponsive />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 인피드 광고 (콘텐츠 사이)
+export function AdInFeed({ className = '' }: { className?: string }) {
+  return (
+    <div className={`w-full ${className}`}>
+      <div className="bg-gradient-to-br from-slate-800/30 to-slate-700/30 backdrop-blur-sm rounded-2xl border border-slate-600/20 p-6 shadow-lg">
+        <div className="text-xs text-slate-400 mb-3 text-center font-medium tracking-wide">Sponsored</div>
+        <AdBanner adSlot="1357924680" adFormat="auto" fullWidthResponsive />
+      </div>
+    </div>
+  );
+}
