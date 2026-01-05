@@ -119,7 +119,7 @@ export default function HomePage() {
           </div>
 
           {/* 광고 배너 */}
-          <AdBannerHorizontal />
+          {/* <AdBannerHorizontal /> */}
 
           {/* 입력 영역 */}
           <div className="card card-hover p-8 md:p-10">
@@ -184,7 +184,7 @@ export default function HomePage() {
           </div>
 
           {/* 인피드 광고 */}
-          {popularWorldcups.length > 0 && <AdInFeed />}
+          {/* {popularWorldcups.length > 0 && <AdInFeed />} */}
 
           {/* 인기 월드컵 */}
           {popularWorldcups.length > 0 && (
@@ -255,7 +255,7 @@ export default function HomePage() {
           </div>
 
           {/* 하단 광고 */}
-          <AdBannerHorizontal />
+          {/* <AdBannerHorizontal /> */}
         </div>
       </div>
     </main>
