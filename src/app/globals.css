@@ -2,50 +2,115 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    --background-start-rgb: 15, 23, 42;
+    --background-end-rgb: 30, 41, 59;
+  }
+
+  * {
+    @apply border-slate-700;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-50;
+    background: linear-gradient(
+      to bottom,
+      rgb(15, 23, 42),
+      rgb(30, 41, 59),
+      rgb(15, 23, 42)
+    );
+    font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb)))
-    rgb(var(--background-start-rgb));
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* 카드 스타일 */
+  .card {
+    @apply rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl shadow-2xl;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:border-brand-500/50 hover:shadow-brand-500/10 hover:shadow-2xl;
+  }
+
+  /* 버튼 스타일 */
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600
+           text-white font-semibold rounded-xl transition-all duration-300
+           shadow-lg shadow-brand-900/50 hover:shadow-xl hover:shadow-brand-900/80
+           hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-700 hover:to-accent-600
+           text-white font-semibold rounded-xl transition-all duration-300
+           shadow-lg shadow-accent-900/50 hover:shadow-xl hover:shadow-accent-900/80
+           hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  /* 글래스모피즘 */
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .glass-strong {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* 그라데이션 텍스트 */
+  .text-gradient-brand {
+    @apply bg-gradient-to-r from-brand-400 to-brand-600 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-accent {
+    @apply bg-gradient-to-r from-accent-400 to-accent-600 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-winner {
+    @apply bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 bg-clip-text text-transparent;
+  }
+
+  /* 스크롤바 스타일링 */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* 커스텀 애니메이션 */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
   }
-  50% {
-    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
+  100% {
+    background-position: 1000px 0;
   }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* 그라데이션 배경 */
-.bg-gradient-worldcup {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.bg-gradient-winner {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+.animate-shimmer {
+  animation: shimmer 3s infinite;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 1000px 100%;
 }

@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Home, Share2 } from 'lucide-react';
+import { Trophy, Home, Share2, Bot, Sparkles, Zap } from 'lucide-react';
 import Image from 'next/image';
+import { AdBannerHorizontal } from '@/components/AdBanner';
 
 interface Candidate {
   name: string;
@@ -163,60 +164,80 @@ export default function GamePage() {
 
   if (winner) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-4">
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="max-w-2xl w-full text-center space-y-8"
-        >
-          <Trophy className="w-24 h-24 text-yellow-400 mx-auto animate-bounce" />
+      <main className="min-h-screen relative overflow-hidden">
+        {/* 배경 효과 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-950/20 via-transparent to-amber-950/20 pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-yellow-500/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
-          <h1 className="text-5xl font-bold bg-gradient-winner bg-clip-text text-transparent">
-            🎉 우승자 🎉
-          </h1>
-
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-            <div className="relative w-64 h-64 mx-auto mb-6 rounded-2xl overflow-hidden">
-              <Image
-                src={winner.imageUrl}
-                alt={winner.name}
-                fill
-                className="object-cover"
-              />
+        <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="max-w-3xl w-full space-y-8"
+          >
+            <div className="text-center space-y-4">
+              <Trophy className="w-28 h-28 text-yellow-400 mx-auto animate-bounce drop-shadow-2xl" />
+              <h1 className="text-6xl md:text-7xl font-black text-gradient-winner">
+                우승자
+              </h1>
             </div>
 
-            <h2 className="text-4xl font-bold text-white mb-2">{winner.name}</h2>
-            <p className="text-gray-300 mb-4">{winner.description}</p>
+            {/* 광고 배너 */}
+            <AdBannerHorizontal />
 
-            <div className="text-sm text-gray-400 bg-white/5 rounded-lg p-3 mb-4">
-              <div className="font-medium text-white mb-1">{topic}</div>
-              <div>16명 중 최종 우승! 🏆</div>
+            <div className="card p-10">
+              <div className="relative w-80 h-80 mx-auto mb-8 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-yellow-400/50">
+                <Image
+                  src={winner.imageUrl}
+                  alt={winner.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+
+              <div className="text-center space-y-4">
+                <h2 className="text-5xl font-black text-white drop-shadow-lg">{winner.name}</h2>
+                <p className="text-xl text-slate-300 max-w-lg mx-auto">{winner.description}</p>
+
+                <div className="glass-strong rounded-xl p-6 max-w-md mx-auto">
+                  <div className="text-sm font-bold text-brand-300 mb-2">{topic}</div>
+                  <div className="text-slate-400 flex items-center justify-center gap-2">
+                    <Trophy className="w-4 h-4" />
+                    16명 중 최종 우승!
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="flex gap-4 justify-center flex-wrap">
-            <button
-              onClick={handleShare}
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-xl transition-all transform hover:scale-105 flex items-center gap-2"
-            >
-              <Share2 className="w-5 h-5" />
-              친구에게 공유하기
-            </button>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <button
+                onClick={handleShare}
+                className="btn-primary px-10 py-4 text-lg flex items-center gap-3"
+              >
+                <Share2 className="w-5 h-5" />
+                친구에게 공유하기
+              </button>
 
-            <button
-              onClick={() => router.push('/')}
-              className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-xl transition-all transform hover:scale-105 flex items-center gap-2"
-            >
-              <Home className="w-5 h-5" />
-              새로 만들기
-            </button>
-          </div>
+              <button
+                onClick={() => router.push('/')}
+                className="btn-secondary px-10 py-4 text-lg flex items-center gap-3"
+              >
+                <Home className="w-5 h-5" />
+                새로 만들기
+              </button>
+            </div>
 
-          {/* 바이럴 메시지 */}
-          <div className="text-gray-400 text-sm">
-            👆 친구들에게 공유하고 그들의 선택을 확인해보세요!
-          </div>
-        </motion.div>
+            <div className="text-center">
+              <p className="text-slate-400 text-sm flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                친구들에게 공유하고 그들의 선택을 확인해보세요!
+              </p>
+            </div>
+
+            {/* 하단 광고 */}
+            <AdBannerHorizontal />
+          </motion.div>
+        </div>
       </main>
     );
   }
@@ -224,87 +245,116 @@ export default function GamePage() {
   if (!currentMatch) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">로딩 중...</div>
+        <div className="flex items-center gap-3 text-slate-300">
+          <Zap className="w-6 h-6 animate-pulse text-brand-400" />
+          <span className="text-xl font-medium">로딩 중...</span>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-6xl w-full">
-        {/* 헤더 */}
-        <div className="text-center mb-8 space-y-2">
-          <h1 className="text-4xl font-bold text-white">{topic}</h1>
-          <div className="flex items-center justify-center gap-4 text-gray-300">
-            <span className="px-4 py-2 bg-purple-500/20 rounded-lg font-bold">
-              {roundName}
-            </span>
-            <span>
-              {matchIndex / 2 + 1} / {currentRound.length / 2}
-            </span>
+    <main className="min-h-screen relative overflow-hidden">
+      {/* 배경 효과 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-950/20 via-transparent to-accent-950/20 pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 py-8">
+        <div className="max-w-7xl w-full space-y-6">
+          {/* 헤더 */}
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl md:text-5xl font-black text-gradient-brand">
+              {topic}
+            </h1>
+            <div className="flex items-center justify-center gap-4 flex-wrap">
+              <span className="px-6 py-2.5 glass-strong rounded-xl font-bold text-brand-300 text-lg">
+                {roundName}
+              </span>
+              <span className="text-slate-400 text-sm">
+                {matchIndex / 2 + 1} / {currentRound.length / 2}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* AI 코멘트 */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-4 bg-blue-500/20 backdrop-blur-lg rounded-xl border border-blue-400/30 text-center"
-        >
-          <div className="text-sm text-blue-300 mb-1">🤖 AI 해설</div>
-          <div className="text-white font-medium min-h-[2rem]">
-            {isLoadingComment ? (
-              <span className="animate-pulse">분석 중...</span>
-            ) : (
-              aiComment || '대결이 시작됩니다!'
-            )}
+          {/* AI 코멘트 */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card p-6 max-w-3xl mx-auto"
+          >
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Bot className="w-5 h-5 text-accent-400" />
+              <span className="text-sm font-bold text-accent-300 uppercase tracking-wide">
+                AI 해설
+              </span>
+            </div>
+            <div className="text-white font-medium text-center min-h-[3rem] flex items-center justify-center">
+              {isLoadingComment ? (
+                <span className="flex items-center gap-2 text-slate-400">
+                  <Zap className="w-4 h-4 animate-pulse" />
+                  분석 중...
+                </span>
+              ) : (
+                <p className="text-lg leading-relaxed">
+                  {aiComment || '대결이 시작됩니다!'}
+                </p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* 대결 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 relative">
+            <AnimatePresence mode="wait">
+              {[currentMatch.candidate1, currentMatch.candidate2].map((candidate, idx) => (
+                <motion.button
+                  key={`${candidate.name}-${matchIndex}`}
+                  initial={{ opacity: 0, x: idx === 0 ? -100 : 100 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleSelect(candidate)}
+                  className="group relative card card-hover overflow-hidden shadow-2xl"
+                >
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={candidate.imageUrl}
+                      alt={candidate.name}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 right-0 p-8 text-left">
+                    <h3 className="text-3xl font-black text-white mb-3 drop-shadow-2xl">
+                      {candidate.name}
+                    </h3>
+                    <p className="text-slate-200 text-base drop-shadow-lg leading-relaxed">
+                      {candidate.description}
+                    </p>
+                  </div>
+
+                  <div className="absolute top-6 right-6 glass-strong text-white px-5 py-2.5 rounded-xl font-bold text-sm opacity-0 group-hover:opacity-100 transition-all group-hover:scale-110 shadow-lg">
+                    선택하기
+                  </div>
+
+                  {/* 호버 효과 */}
+                  <div className="absolute inset-0 border-4 border-brand-500/0 group-hover:border-brand-500/50 rounded-2xl transition-all pointer-events-none" />
+                </motion.button>
+              ))}
+            </AnimatePresence>
+
+            {/* VS 표시 */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block pointer-events-none">
+              <div className="text-7xl font-black text-white/10 drop-shadow-2xl">
+                VS
+              </div>
+            </div>
           </div>
-        </motion.div>
 
-        {/* 대결 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <AnimatePresence mode="wait">
-            {[currentMatch.candidate1, currentMatch.candidate2].map((candidate, idx) => (
-              <motion.button
-                key={`${candidate.name}-${matchIndex}`}
-                initial={{ opacity: 0, x: idx === 0 ? -100 : 100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleSelect(candidate)}
-                className="group relative bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border-2 border-white/20 hover:border-purple-400 transition-all shadow-2xl"
-              >
-                <div className="relative w-full aspect-square">
-                  <Image
-                    src={candidate.imageUrl}
-                    alt={candidate.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-left">
-                  <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
-                    {candidate.name}
-                  </h3>
-                  <p className="text-gray-200 text-sm drop-shadow">
-                    {candidate.description}
-                  </p>
-                </div>
-
-                <div className="absolute top-4 right-4 bg-purple-500 text-white px-4 py-2 rounded-full font-bold text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                  선택하기
-                </div>
-              </motion.button>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {/* VS 표시 */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
-          <div className="text-6xl font-black text-white/20">VS</div>
+          {/* 광고 배너 */}
+          <AdBannerHorizontal />
         </div>
       </div>
     </main>
