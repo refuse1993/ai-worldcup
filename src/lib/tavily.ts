@@ -29,28 +29,35 @@ interface WikipediaPage {
 }
 
 /**
- * Wikipedia에서 이미지와 설명 가져오기
+ * Wikipedia에서 이미지와 설명 가져오기 (최적화: 타임아웃 5초)
  */
 async function getWikipediaInfo(name: string): Promise<{
   imageUrl: string;
   description: string;
 } | null> {
   try {
-    // 한국어 Wikipedia API 호출
+    // 타임아웃 5초
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    // 한국어 Wikipedia만 시도 (영어 시도 제거로 시간 절약)
     const response = await fetch(
       `https://ko.wikipedia.org/w/api.php?` +
         new URLSearchParams({
           action: 'query',
           format: 'json',
-          prop: 'pageimages|pageterms|extracts',
+          prop: 'pageimages|extracts',
           titles: name,
           pithumbsize: '500',
           exintro: 'true',
           explaintext: 'true',
-          exsentences: '2',
+          exsentences: '1',
           origin: '*',
-        })
+        }),
+      { signal: controller.signal }
     );
+
+    clearTimeout(timeout);
 
     if (!response.ok) return null;
 
@@ -61,46 +68,40 @@ async function getWikipediaInfo(name: string): Promise<{
 
     const page: WikipediaPage = Object.values(pages)[0] as WikipediaPage;
 
-    if (page.pageid === -1) {
-      // 한국어 없으면 영어로 시도
-      const enResponse = await fetch(
-        `https://en.wikipedia.org/w/api.php?` +
-          new URLSearchParams({
-            action: 'query',
-            format: 'json',
-            prop: 'pageimages|pageterms|extracts',
-            titles: name,
-            pithumbsize: '500',
-            exintro: 'true',
-            explaintext: 'true',
-            exsentences: '2',
-            origin: '*',
-          })
-      );
-
-      if (!enResponse.ok) return null;
-
-      const enData = await enResponse.json();
-      const enPages = enData.query?.pages;
-
-      if (!enPages) return null;
-
-      const enPage: WikipediaPage = Object.values(enPages)[0] as WikipediaPage;
-
-      return {
-        imageUrl: enPage.thumbnail?.source || '',
-        description: enPage.extract || enPage.description || '',
-      };
+    // 페이지가 없거나 이미지가 없으면 null 반환
+    if (page.pageid === -1 || !page.thumbnail) {
+      return null;
     }
 
     return {
-      imageUrl: page.thumbnail?.source || '',
-      description: page.extract || page.description || '',
+      imageUrl: page.thumbnail.source,
+      description: page.extract || `${name} 관련 정보`,
     };
-  } catch (error) {
-    console.error(`Wikipedia 정보 가져오기 실패 (${name}):`, error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error(`Wikipedia 타임아웃 (${name})`);
+    }
     return null;
   }
+}
+
+/**
+ * 배치 단위로 병렬 처리 (Netlify 타임아웃 대비)
+ */
+async function processBatch<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R>,
+  batchSize: number = 5
+): Promise<R[]> {
+  const results: R[] = [];
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+  }
+
+  return results;
 }
 
 export async function searchCandidates(
@@ -114,7 +115,9 @@ export async function searchCandidates(
   }
 
   try {
-    // Tavily로 후보 이름 검색
+    console.log(`🔍 주제 "${topic}" 검색 중...`);
+
+    // Tavily로 후보 이름 + 이미지 검색
     const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: {
@@ -122,9 +125,9 @@ export async function searchCandidates(
       },
       body: JSON.stringify({
         api_key: apiKey,
-        query: `${topic} top ${count * 2} list ranking`, // 중복 대비 2배 검색
+        query: `${topic} top ${count * 2} list ranking`,
         search_depth: 'basic',
-        include_images: false,
+        include_images: true, // Tavily 이미지를 fallback으로 사용
         include_answer: false,
         max_results: count * 2,
       }),
@@ -138,41 +141,50 @@ export async function searchCandidates(
 
     // 이름 추출 및 중복 제거
     const uniqueNames = new Set<string>();
-    const namesList: string[] = [];
+    const namesList: { name: string; tavilyImage?: string }[] = [];
 
-    for (const result of data.results) {
+    for (let i = 0; i < data.results.length; i++) {
+      const result = data.results[i];
       const name = result.title.split(/[-–|]/)[0].trim();
-
-      // 중복 체크 (대소문자 무시)
       const normalizedName = name.toLowerCase().replace(/\s+/g, '');
 
       if (!uniqueNames.has(normalizedName) && name.length > 1 && name.length < 50) {
         uniqueNames.add(normalizedName);
-        namesList.push(name);
+        namesList.push({
+          name,
+          tavilyImage: data.images[i], // Tavily 이미지 저장
+        });
 
         if (namesList.length >= count) break;
       }
     }
 
-    // Wikipedia에서 이미지와 설명 가져오기
-    const candidates = await Promise.all(
-      namesList.map(async (name) => {
+    console.log(`📷 Wikipedia에서 이미지 가져오는 중... (${namesList.length}개)`);
+
+    // Wikipedia에서 이미지 가져오기 (5개씩 배치)
+    const candidates = await processBatch(
+      namesList,
+      async ({ name, tavilyImage }) => {
         const wikiInfo = await getWikipediaInfo(name);
 
         return {
           name,
-          description: wikiInfo?.description?.slice(0, 100) || `${topic} 관련 후보`,
-          imageUrl: wikiInfo?.imageUrl || 'https://via.placeholder.com/500?text=' + encodeURIComponent(name),
+          description: wikiInfo?.description?.slice(0, 100) || `${topic} 관련`,
+          // Wikipedia 이미지 우선, 없으면 Tavily 이미지 사용
+          imageUrl: wikiInfo?.imageUrl || tavilyImage || 'https://via.placeholder.com/500?text=' + encodeURIComponent(name),
         };
-      })
+      },
+      5 // 5개씩 배치 처리
     );
 
-    // 이미지가 있는 후보만 필터링
+    console.log(`✅ 후보 생성 완료 (${candidates.length}개)`);
+
+    // placeholder 제외하고 반환
     const validCandidates = candidates.filter(c => c.imageUrl && !c.imageUrl.includes('placeholder'));
 
     // 부족하면 placeholder 포함
     if (validCandidates.length < count) {
-      return [...validCandidates, ...candidates.slice(validCandidates.length)].slice(0, count);
+      return [...validCandidates, ...candidates.filter(c => c.imageUrl.includes('placeholder'))].slice(0, count);
     }
 
     return validCandidates.slice(0, count);
