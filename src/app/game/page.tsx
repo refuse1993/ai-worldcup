@@ -30,23 +30,32 @@ export default function GamePage() {
   const [aiComment, setAiComment] = useState('');
   const [isLoadingComment, setIsLoadingComment] = useState(false);
   const [winner, setWinner] = useState<Candidate | null>(null);
+  const [worldcupId, setWorldcupId] = useState<string>('');
+  const [rankings, setRankings] = useState<any[]>([]);
 
   useEffect(() => {
     const loadWorldcup = async () => {
       // URL에서 ID 가져오기 (공유 링크)
       const params = new URLSearchParams(window.location.search);
-      const worldcupId = params.get('id');
+      const id = params.get('id');
 
-      if (worldcupId) {
+      if (id) {
+        setWorldcupId(id);
         // 공유된 월드컵 불러오기
         try {
-          const response = await fetch(`/api/worldcup/${worldcupId}`);
+          const response = await fetch(`/api/worldcup/${id}`);
           const data = await response.json();
 
           setTopic(data.topic);
           setAllCandidates(data.candidates);
           setCurrentRound(data.candidates);
           setupMatch(data.candidates, 0);
+
+          // 랭킹 불러오기
+          const rankingResponse = await fetch(`/api/worldcup/${id}/results`);
+          const rankingData = await rankingResponse.json();
+          setRankings(rankingData.rankings || []);
+
           return;
         } catch (error) {
           console.error('월드컵 로드 오류:', error);
@@ -60,11 +69,23 @@ export default function GamePage() {
         return;
       }
 
-      const { topic: t, candidates } = JSON.parse(data);
+      const { id: localId, topic: t, candidates } = JSON.parse(data);
+      setWorldcupId(localId || '');
       setTopic(t);
       setAllCandidates(candidates);
       setCurrentRound(candidates);
       setupMatch(candidates, 0);
+
+      // 랭킹 불러오기
+      if (localId) {
+        try {
+          const rankingResponse = await fetch(`/api/worldcup/${localId}/results`);
+          const rankingData = await rankingResponse.json();
+          setRankings(rankingData.rankings || []);
+        } catch (error) {
+          console.error('랭킹 로드 오류:', error);
+        }
+      }
     };
 
     loadWorldcup();
@@ -75,7 +96,30 @@ export default function GamePage() {
       // 다음 라운드로
       if (nextRound.length === 1) {
         // 우승자 결정
-        setWinner(nextRound[0]);
+        const winnerCandidate = nextRound[0];
+        setWinner(winnerCandidate);
+
+        // 결과 저장
+        if (worldcupId) {
+          fetch(`/api/worldcup/${worldcupId}/results`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              winner_name: winnerCandidate.name,
+              winner_image: winnerCandidate.imageUrl,
+            }),
+          })
+            .then(res => res.json())
+            .then(() => {
+              // 랭킹 다시 불러오기
+              return fetch(`/api/worldcup/${worldcupId}/results`);
+            })
+            .then(res => res.json())
+            .then(data => {
+              setRankings(data.rankings || []);
+            })
+            .catch(error => console.error('결과 저장 오류:', error));
+        }
       } else {
         // 다음 라운드 시작
         const newRoundName = getRoundName(nextRound.length);
@@ -145,21 +189,40 @@ export default function GamePage() {
     return '우승';
   };
 
-  const handleShare = async () => {
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
+  const handleShare = async (platform?: 'kakao' | 'instagram' | 'copy') => {
     const url = window.location.href;
     const text = `${topic} - 내 선택은 ${winner?.name}! 🏆`;
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'AI 이상형 월드컵', text, url });
-      } catch (error) {
-        console.log('공유 취소됨');
-      }
-    } else {
-      // 클립보드 복사
-      navigator.clipboard.writeText(url);
-      alert('링크가 복사되었습니다! 친구들에게 공유해보세요 🎉');
+    if (!platform) {
+      setShowShareMenu(true);
+      return;
     }
+
+    switch (platform) {
+      case 'kakao':
+        // 카카오톡 공유용 텍스트
+        const kakaoText = `🏆 ${topic}\n\n✨ 내 최종 선택: ${winner?.name}\n\n당신의 선택은?\n${url}`;
+        await navigator.clipboard.writeText(kakaoText);
+        alert('카카오톡 공유용 메시지가 복사되었습니다!\n\n카카오톡을 열고 붙여넣기 해주세요 📱');
+        break;
+
+      case 'instagram':
+        // 인스타그램 스토리용 간단한 텍스트
+        const instaText = `${topic}\n내 선택: ${winner?.name} 🏆\n\n${url}`;
+        await navigator.clipboard.writeText(instaText);
+        alert('인스타그램 공유용 텍스트가 복사되었습니다!\n\n인스타그램 스토리에 붙여넣기 해주세요 📸');
+        break;
+
+      case 'copy':
+        // 일반 URL 복사
+        await navigator.clipboard.writeText(url);
+        alert('링크가 복사되었습니다! 🎉');
+        break;
+    }
+
+    setShowShareMenu(false);
   };
 
   if (winner) {
@@ -209,22 +272,65 @@ export default function GamePage() {
               </div>
             </div>
 
-            <div className="flex gap-4 justify-center flex-wrap">
-              <button
-                onClick={handleShare}
-                className="btn-primary px-10 py-4 text-lg flex items-center gap-3"
-              >
-                <Share2 className="w-5 h-5" />
-                친구에게 공유하기
-              </button>
+            <div className="space-y-4">
+              {/* 공유 메뉴 */}
+              {showShareMenu ? (
+                <div className="card p-6 space-y-3 animate-fade-in">
+                  <div className="text-center text-sm font-semibold text-slate-300 mb-2">
+                    공유 플랫폼 선택
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button
+                      onClick={() => handleShare('kakao')}
+                      className="glass-strong hover:bg-yellow-500/20 p-4 rounded-xl transition-all hover:scale-105 active:scale-95 border border-yellow-500/30"
+                    >
+                      <div className="text-3xl mb-2">💬</div>
+                      <div className="font-bold text-white">카카오톡</div>
+                      <div className="text-xs text-slate-400 mt-1">메시지 복사</div>
+                    </button>
+                    <button
+                      onClick={() => handleShare('instagram')}
+                      className="glass-strong hover:bg-pink-500/20 p-4 rounded-xl transition-all hover:scale-105 active:scale-95 border border-pink-500/30"
+                    >
+                      <div className="text-3xl mb-2">📸</div>
+                      <div className="font-bold text-white">인스타그램</div>
+                      <div className="text-xs text-slate-400 mt-1">스토리용 텍스트</div>
+                    </button>
+                    <button
+                      onClick={() => handleShare('copy')}
+                      className="glass-strong hover:bg-brand-500/20 p-4 rounded-xl transition-all hover:scale-105 active:scale-95 border border-brand-500/30"
+                    >
+                      <div className="text-3xl mb-2">🔗</div>
+                      <div className="font-bold text-white">링크 복사</div>
+                      <div className="text-xs text-slate-400 mt-1">URL만 복사</div>
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setShowShareMenu(false)}
+                    className="w-full glass hover:glass-strong p-3 rounded-xl text-slate-400 text-sm transition-all"
+                  >
+                    취소
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-4 justify-center flex-wrap">
+                  <button
+                    onClick={() => handleShare()}
+                    className="btn-primary px-10 py-4 text-lg flex items-center gap-3"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    친구에게 공유하기
+                  </button>
 
-              <button
-                onClick={() => router.push('/')}
-                className="btn-secondary px-10 py-4 text-lg flex items-center gap-3"
-              >
-                <Home className="w-5 h-5" />
-                새로 만들기
-              </button>
+                  <button
+                    onClick={() => router.push('/')}
+                    className="btn-secondary px-10 py-4 text-lg flex items-center gap-3"
+                  >
+                    <Home className="w-5 h-5" />
+                    새로 만들기
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="text-center">
@@ -233,6 +339,54 @@ export default function GamePage() {
                 친구들에게 공유하고 그들의 선택을 확인해보세요!
               </p>
             </div>
+
+            {/* 랭킹 */}
+            {rankings.length > 0 && (
+              <div className="card p-8">
+                <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-yellow-400" />
+                  전체 랭킹
+                </h3>
+                <div className="space-y-3">
+                  {rankings.slice(0, 5).map((rank: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center gap-4 p-4 rounded-xl transition-all ${
+                        rank.name === winner?.name
+                          ? 'glass-strong border-2 border-yellow-400/50'
+                          : 'glass'
+                      }`}
+                    >
+                      <div className={`text-2xl font-black ${
+                        idx === 0 ? 'text-yellow-400' :
+                        idx === 1 ? 'text-slate-300' :
+                        idx === 2 ? 'text-amber-600' :
+                        'text-slate-500'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      {rank.image && (
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                          <Image
+                            src={rank.image}
+                            alt={rank.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="font-bold text-white">{rank.name}</div>
+                        <div className="text-xs text-slate-400">{rank.count}명 선택</div>
+                      </div>
+                      {rank.name === winner?.name && (
+                        <div className="text-yellow-400 text-sm font-bold">내 선택</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 하단 광고 */}
             <AdBannerHorizontal />
