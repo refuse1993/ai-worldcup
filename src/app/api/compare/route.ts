@@ -10,6 +10,21 @@ export async function POST(req: NextRequest) {
   try {
     const { candidate1, candidate2, topic } = await req.json();
 
+    // Validation
+    if (!candidate1 || !candidate2 || !topic) {
+      return NextResponse.json(
+        { error: '후보 정보가 올바르지 않습니다' },
+        { status: 400 }
+      );
+    }
+
+    if (!candidate1.name || !candidate2.name) {
+      return NextResponse.json(
+        { error: '후보 이름이 없습니다' },
+        { status: 400 }
+      );
+    }
+
     const model = google('gemma-3-27b-it');
 
     const result = await streamText({
