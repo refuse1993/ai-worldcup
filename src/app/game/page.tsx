@@ -6,11 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Home, Share2, Bot, Sparkles, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { AdBannerHorizontal } from '@/components/AdBanner';
+import LocationMap from '@/components/LocationMap';
 
 interface Candidate {
   name: string;
   description: string;
   imageUrl: string;
+  address?: string; // 위치 기반 주제일 경우
 }
 
 interface Match {
@@ -513,6 +515,28 @@ export default function GamePage() {
               </div>
             </div>
           </div>
+
+          {/* 위치 정보 (주소가 있을 경우) */}
+          {(currentMatch.candidate1.address || currentMatch.candidate2.address) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mt-8"
+            >
+              {currentMatch.candidate1.address && (
+                <LocationMap
+                  address={currentMatch.candidate1.address}
+                  name={currentMatch.candidate1.name}
+                />
+              )}
+              {currentMatch.candidate2.address && (
+                <LocationMap
+                  address={currentMatch.candidate2.address}
+                  name={currentMatch.candidate2.name}
+                />
+              )}
+            </motion.div>
+          )}
 
           {/* 광고 배너 */}
           {/* <AdBannerHorizontal /> */}

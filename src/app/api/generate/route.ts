@@ -16,25 +16,32 @@ export async function POST(req: NextRequest) {
       throw new Error('TAVILY_API_KEY가 설정되지 않았습니다');
     }
 
-    // Step 1: AI로 검색 쿼리 최적화
-    console.log(`🤖 AI로 검색 쿼리 최적화 중...`);
+    // Step 1: AI로 주제 분석 및 검색 쿼리 최적화
+    console.log(`🤖 AI로 주제 분석 중...`);
     const model = groq('llama-3.3-70b-versatile');
 
-    const queryResult = await generateText({
+    const analysisResult = await generateText({
       model,
       prompt: `주제: "${topic}"
 
-이 주제를 웹 검색하기 위한 최적의 검색어를 생성하세요.
+이 주제를 분석하고 다음 정보를 JSON 형식으로 출력하세요:
 
-규칙:
-- 모호한 단어는 구체적으로 변환 (예: "이상형" → "인기 연예인")
-- 최신 정보를 위해 연도 추가
-- 한국어 주제는 한국어로 유지
+{
+  "isLocationBased": true/false (맛집, 카페, 음식점, 장소, 여행지 등 물리적 위치가 있는 주제인지),
+  "optimizedQuery": "웹 검색에 최적화된 검색어 (모호한 단어는 구체화, 최신 정보를 위해 연도 추가)"
+}
 
-검색어만 출력하세요 (설명 없이):`,
+JSON만 출력하세요 (다른 텍스트 없이):`,
     });
 
-    const optimizedQuery = queryResult.text.trim().replace(/['"]/g, '');
+    let analysisText = analysisResult.text.trim();
+    const analysisMatch = analysisText.match(/\{[\s\S]*\}/);
+    if (analysisMatch) {
+      analysisText = analysisMatch[0];
+    }
+
+    const { isLocationBased, optimizedQuery } = JSON.parse(analysisText);
+    console.log(`📍 위치 기반: ${isLocationBased ? 'YES' : 'NO'}`);
     console.log(`🔍 최적화된 검색어: "${optimizedQuery}"`);
 
     // Step 2: Tavily로 검색
@@ -56,12 +63,29 @@ export async function POST(req: NextRequest) {
 
     const tavilyData = await tavilyResponse.json();
 
-    // Step 3: Gemma로 실제 이름 추출
+    // Step 3: AI로 실제 이름 추출
     console.log('🤖 AI로 실제 이름 추출 중...');
 
-    const result = await generateText({
-      model,
-      prompt: `다음은 "${topic}" 주제로 검색된 웹 검색 결과입니다:
+    const extractionPrompt = isLocationBased
+      ? `다음은 "${topic}" 주제로 검색된 웹 검색 결과입니다:
+
+${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`).join('\n\n---\n\n')}
+
+위 검색 결과에서 실제 장소/음식점을 정확히 16개 추출하고, 각각에 대한 정보를 작성하세요.
+
+중요:
+- 실제 장소 이름만 추출 (기사 제목 X)
+- 각 항목의 특징을 간결하게 설명 (30자 이내)
+- 주소 정보 반드시 포함
+- 중복 제거
+- 정확히 16개
+
+다음 형식의 JSON만 출력 (다른 텍스트 없이):
+[
+  {"name": "장소명", "description": "간단한 설명", "address": "주소"},
+  {"name": "장소명2", "description": "간단한 설명2", "address": "주소2"}
+]`
+      : `다음은 "${topic}" 주제로 검색된 웹 검색 결과입니다:
 
 ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`).join('\n\n---\n\n')}
 
@@ -77,7 +101,11 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
 [
   {"name": "이름1", "description": "간단한 설명"},
   {"name": "이름2", "description": "간단한 설명"}
-]`,
+]`;
+
+    const result = await generateText({
+      model,
+      prompt: extractionPrompt,
     });
 
     // JSON 파싱
@@ -87,7 +115,7 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
       jsonText = jsonMatch[0];
     }
 
-    const extractedItems: Array<{ name: string; description: string }> = JSON.parse(jsonText);
+    const extractedItems: Array<{ name: string; description: string; address?: string }> = JSON.parse(jsonText);
 
     // Step 4: 각 이름마다 개별 이미지 검색
     console.log(`📷 각 항목의 이미지 검색 중... (${extractedItems.length}개)`);
@@ -129,6 +157,7 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
               '"%3E%3C/rect%3E%3Ctext x="50%25" y="50%25" font-size="24" fill="white" text-anchor="middle" dominant-baseline="middle"%3E' +
               encodeURIComponent(item.name) +
               '%3C/text%3E%3C/svg%3E',
+          ...(item.address && { address: item.address }), // 주소가 있으면 포함
         };
       })
     );
