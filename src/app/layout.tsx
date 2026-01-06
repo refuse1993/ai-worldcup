@@ -29,14 +29,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <head>
-        {/* Vercel Analytics */}
-        <script
-          defer
-          src="/_vercel/insights/script.js"
-          data-endpoint="/_vercel/insights"
-        />
-      </head>
       <body className="antialiased min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
         {children}
       </body>
