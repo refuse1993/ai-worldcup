@@ -92,7 +92,8 @@ export default function GamePage() {
   }, [router]);
 
   const setupMatch = (candidates: Candidate[], index: number) => {
-    if (index >= candidates.length) {
+    // 범위 체크: index + 1도 유효한지 확인
+    if (index >= candidates.length || index + 1 >= candidates.length) {
       // 다음 라운드로
       if (nextRound.length === 1) {
         // 우승자 결정
