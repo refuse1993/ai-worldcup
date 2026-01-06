@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
         api_key: apiKey,
         query: `${topic} 제목 목록 리스트`,
         search_depth: 'advanced',
+        include_images: true,
         max_results: 10,
       }),
     });
@@ -66,17 +67,40 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
 
     const names: string[] = JSON.parse(jsonText);
 
-    // Step 3: Wikipedia로 이미지/설명 가져오기
-    console.log(`📷 Wikipedia에서 정보 가져오는 중... (${names.length}개)`);
+    // Step 3: 각 이름마다 개별 이미지 검색
+    console.log(`📷 각 항목의 이미지 검색 중... (${names.length}개)`);
+
     const candidates = await Promise.all(
       names.slice(0, 16).map(async (name: string) => {
+        // 개별 Tavily 이미지 검색
+        const imageResponse = await fetch('https://api.tavily.com/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: apiKey,
+            query: `${name} 공식 포스터 이미지`,
+            include_images: true,
+            max_results: 3,
+          }),
+        });
+
+        const imageData = await imageResponse.json();
+        const tavilyImage = imageData.images?.[0];
+
+        // Wikipedia 설명 (옵션)
         const wikiInfo = await getWikipediaInfo(name);
+
         return {
           name,
           description: wikiInfo?.description?.slice(0, 100) || `${topic} 관련`,
           imageUrl:
+            tavilyImage ||
             wikiInfo?.imageUrl ||
-            `https://via.placeholder.com/500?text=${encodeURIComponent(name)}`,
+            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="500" height="500"%3E%3Crect width="500" height="500" fill="%23' +
+              Math.floor(Math.random() * 16777215).toString(16) +
+              '"%3E%3C/rect%3E%3Ctext x="50%25" y="50%25" font-size="24" fill="white" text-anchor="middle" dominant-baseline="middle"%3E' +
+              encodeURIComponent(name) +
+              '%3C/text%3E%3C/svg%3E',
         };
       })
     );
