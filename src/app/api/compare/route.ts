@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { streamText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { groq } from '@ai-sdk/groq';
 
 /**
  * AI 비교 설명 API
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const model = google('gemma-3-27b-it');
+    const model = groq('llama-3.3-70b-versatile');
 
     const result = await streamText({
       model,

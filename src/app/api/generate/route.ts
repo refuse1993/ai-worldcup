@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWikipediaInfo } from '@/lib/tavily';
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { groq } from '@ai-sdk/groq';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,14 +16,34 @@ export async function POST(req: NextRequest) {
       throw new Error('TAVILY_API_KEY가 설정되지 않았습니다');
     }
 
-    // Step 1: Tavily로 검색
-    console.log(`🔍 주제 "${topic}" 검색 중...`);
+    // Step 1: AI로 검색 쿼리 최적화
+    console.log(`🤖 AI로 검색 쿼리 최적화 중...`);
+    const model = groq('llama-3.3-70b-versatile');
+
+    const queryResult = await generateText({
+      model,
+      prompt: `주제: "${topic}"
+
+이 주제를 웹 검색하기 위한 최적의 검색어를 생성하세요.
+
+규칙:
+- 모호한 단어는 구체적으로 변환 (예: "이상형" → "인기 연예인")
+- 최신 정보를 위해 연도 추가
+- 한국어 주제는 한국어로 유지
+
+검색어만 출력하세요 (설명 없이):`,
+    });
+
+    const optimizedQuery = queryResult.text.trim().replace(/['"]/g, '');
+    console.log(`🔍 최적화된 검색어: "${optimizedQuery}"`);
+
+    // Step 2: Tavily로 검색
     const tavilyResponse = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         api_key: apiKey,
-        query: `${topic} 제목 목록 리스트`,
+        query: optimizedQuery,
         search_depth: 'advanced',
         include_images: true,
         max_results: 10,
@@ -36,9 +56,8 @@ export async function POST(req: NextRequest) {
 
     const tavilyData = await tavilyResponse.json();
 
-    // Step 2: Gemma 3 27B로 실제 이름 추출
+    // Step 3: Gemma로 실제 이름 추출
     console.log('🤖 AI로 실제 이름 추출 중...');
-    const model = google('gemma-3-27b-it');
 
     const result = await generateText({
       model,
@@ -70,7 +89,7 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
 
     const extractedItems: Array<{ name: string; description: string }> = JSON.parse(jsonText);
 
-    // Step 3: 각 이름마다 개별 이미지 검색
+    // Step 4: 각 이름마다 개별 이미지 검색
     console.log(`📷 각 항목의 이미지 검색 중... (${extractedItems.length}개)`);
 
     const candidates = await Promise.all(

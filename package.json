@@ -15,6 +15,7 @@
     "@supabase/supabase-js": "^2.48.1",
     "ai": "^6.0.6",
     "@ai-sdk/google": "^3.0.2",
+    "@ai-sdk/groq": "^1.0.4",
     "zod": "^3.24.1",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.469.0",
