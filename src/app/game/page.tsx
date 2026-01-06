@@ -255,7 +255,7 @@ export default function GamePage() {
             </div>
 
             {/* 광고 배너 */}
-            <AdBannerHorizontal />
+            {/* <AdBannerHorizontal /> */}
 
             <div className="card p-10">
               <div className="relative w-80 h-80 mx-auto mb-8 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-yellow-400/50">
@@ -360,18 +360,16 @@ export default function GamePage() {
                   {rankings.slice(0, 5).map((rank: any, idx: number) => (
                     <div
                       key={idx}
-                      className={`flex items-center gap-4 p-4 rounded-xl transition-all ${
-                        rank.name === winner?.name
-                          ? 'glass-strong border-2 border-yellow-400/50'
-                          : 'glass'
-                      }`}
+                      className={`flex items-center gap-4 p-4 rounded-xl transition-all ${rank.name === winner?.name
+                        ? 'glass-strong border-2 border-yellow-400/50'
+                        : 'glass'
+                        }`}
                     >
-                      <div className={`text-2xl font-black ${
-                        idx === 0 ? 'text-yellow-400' :
+                      <div className={`text-2xl font-black ${idx === 0 ? 'text-yellow-400' :
                         idx === 1 ? 'text-slate-300' :
-                        idx === 2 ? 'text-amber-600' :
-                        'text-slate-500'
-                      }`}>
+                          idx === 2 ? 'text-amber-600' :
+                            'text-slate-500'
+                        }`}>
                         {idx + 1}
                       </div>
                       {rank.image && (
@@ -398,7 +396,7 @@ export default function GamePage() {
             )}
 
             {/* 하단 광고 */}
-            <AdBannerHorizontal />
+            {/* <AdBannerHorizontal /> */}
           </motion.div>
         </div>
       </main>
@@ -517,7 +515,7 @@ export default function GamePage() {
           </div>
 
           {/* 광고 배너 */}
-          <AdBannerHorizontal />
+          {/* <AdBannerHorizontal /> */}
         </div>
       </div>
     </main>
