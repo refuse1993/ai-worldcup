@@ -122,13 +122,17 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
 
     const candidates = await Promise.all(
       extractedItems.slice(0, 16).map(async (item) => {
-        // 개별 Tavily 이미지 검색
+        // 개별 Tavily 이미지 검색 (위치 기반은 실제 사진)
+        const imageQuery = isLocationBased
+          ? `${item.name} ${item.address || ''} 외관 내부 사진`
+          : `${item.name} 공식 포스터 이미지`;
+
         const imageResponse = await fetch('https://api.tavily.com/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             api_key: apiKey,
-            query: `${item.name} 공식 포스터 이미지`,
+            query: imageQuery,
             include_images: true,
             max_results: 3,
           }),

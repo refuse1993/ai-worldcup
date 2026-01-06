@@ -11,7 +11,7 @@ export default function LocationMap({ address, name }: LocationMapProps) {
   const mapUrl = `https://maps.google.com/maps?q=${encodedAddress}&output=embed`;
 
   return (
-    <div className="mt-4 rounded-xl overflow-hidden border border-white/10 bg-black/20">
+    <div className="mt-4 rounded-xl overflow-hidden border border-white/10 bg-black/20 group">
       <div className="p-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-b border-white/10">
         <div className="flex items-center gap-2">
           <svg
@@ -37,16 +37,20 @@ export default function LocationMap({ address, name }: LocationMapProps) {
         </div>
       </div>
 
-      <iframe
-        src={mapUrl}
-        width="100%"
-        height="300"
-        style={{ border: 0 }}
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        title={`${name} 위치`}
-        className="w-full"
-      />
+      <div className="relative pointer-events-none group-hover:pointer-events-auto">
+        <iframe
+          src={mapUrl}
+          width="100%"
+          height="300"
+          style={{ border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`${name} 위치`}
+          className="w-full"
+        />
+        {/* 호버 전까지 클릭 방지 오버레이 */}
+        <div className="absolute inset-0 group-hover:hidden" />
+      </div>
 
       <div className="p-3 bg-black/20 border-t border-white/10">
         <a
