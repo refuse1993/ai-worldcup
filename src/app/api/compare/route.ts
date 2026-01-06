@@ -10,8 +10,9 @@ export async function POST(req: NextRequest) {
   try {
     const { candidate1, candidate2, topic } = await req.json();
 
-    // Validation
+    // Validation with detailed logging
     if (!candidate1 || !candidate2 || !topic) {
+      console.error('비교 API 에러:', { candidate1, candidate2, topic });
       return NextResponse.json(
         { error: '후보 정보가 올바르지 않습니다' },
         { status: 400 }
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!candidate1.name || !candidate2.name) {
+      console.error('후보 이름 없음:', { c1: candidate1, c2: candidate2 });
       return NextResponse.json(
         { error: '후보 이름이 없습니다' },
         { status: 400 }

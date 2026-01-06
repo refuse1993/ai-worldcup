@@ -148,6 +148,14 @@ export default function GamePage() {
     setIsLoadingComment(true);
     setAiComment('');
 
+    // Validation
+    if (!c1 || !c2) {
+      console.error('후보가 없습니다:', { c1, c2 });
+      setAiComment('두 후보 모두 훌륭한 선택입니다!');
+      setIsLoadingComment(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/compare', {
         method: 'POST',
