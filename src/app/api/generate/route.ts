@@ -85,7 +85,13 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
         });
 
         const imageData = await imageResponse.json();
-        const tavilyImage = imageData.images?.[0];
+
+        // 네이버/다음 등 핫링킹 차단 도메인 필터링
+        const blockedDomains = ['pstatic.net', 'kakaocdn.net', 'daumcdn.net'];
+        const validImages = (imageData.images || []).filter((url: string) =>
+          !blockedDomains.some(domain => url.includes(domain))
+        );
+        const tavilyImage = validImages[0];
 
         // Wikipedia 설명 (옵션)
         const wikiInfo = await getWikipediaInfo(name);
