@@ -46,16 +46,19 @@ export async function POST(req: NextRequest) {
 
 ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`).join('\n\n---\n\n')}
 
-위 검색 결과에서 실제 작품/인물/항목의 이름을 정확히 16개 추출하세요.
+위 검색 결과에서 실제 작품/인물/항목을 정확히 16개 추출하고, 각각에 대한 간단한 설명(30자 이내)을 작성하세요.
 
 중요:
 - 기사 제목이 아닌, 실제 이름만 추출
-- 예: "Top 15 Korean Dramas" ❌ → "오징어 게임", "더 글로리" ✅
+- 각 항목의 특징을 간결하게 설명
 - 중복 제거
 - 정확히 16개
 
 다음 형식의 JSON만 출력 (다른 텍스트 없이):
-["이름1", "이름2", "이름3", ...]`,
+[
+  {"name": "이름1", "description": "간단한 설명"},
+  {"name": "이름2", "description": "간단한 설명"}
+]`,
     });
 
     // JSON 파싱
@@ -65,20 +68,20 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
       jsonText = jsonMatch[0];
     }
 
-    const names: string[] = JSON.parse(jsonText);
+    const extractedItems: Array<{ name: string; description: string }> = JSON.parse(jsonText);
 
     // Step 3: 각 이름마다 개별 이미지 검색
-    console.log(`📷 각 항목의 이미지 검색 중... (${names.length}개)`);
+    console.log(`📷 각 항목의 이미지 검색 중... (${extractedItems.length}개)`);
 
     const candidates = await Promise.all(
-      names.slice(0, 16).map(async (name: string) => {
+      extractedItems.slice(0, 16).map(async (item) => {
         // 개별 Tavily 이미지 검색
         const imageResponse = await fetch('https://api.tavily.com/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             api_key: apiKey,
-            query: `${name} 공식 포스터 이미지`,
+            query: `${item.name} 공식 포스터 이미지`,
             include_images: true,
             max_results: 3,
           }),
@@ -93,19 +96,19 @@ ${tavilyData.results.map((r: any) => `제목: ${r.title}\n내용: ${r.content}`)
         );
         const tavilyImage = validImages[0];
 
-        // Wikipedia 설명 (옵션)
-        const wikiInfo = await getWikipediaInfo(name);
+        // Wikipedia 이미지 (fallback)
+        const wikiInfo = await getWikipediaInfo(item.name);
 
         return {
-          name,
-          description: wikiInfo?.description?.slice(0, 100) || `${topic} 관련`,
+          name: item.name,
+          description: item.description, // AI가 생성한 설명 사용
           imageUrl:
             tavilyImage ||
             wikiInfo?.imageUrl ||
             'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="500" height="500"%3E%3Crect width="500" height="500" fill="%23' +
               Math.floor(Math.random() * 16777215).toString(16) +
               '"%3E%3C/rect%3E%3Ctext x="50%25" y="50%25" font-size="24" fill="white" text-anchor="middle" dominant-baseline="middle"%3E' +
-              encodeURIComponent(name) +
+              encodeURIComponent(item.name) +
               '%3C/text%3E%3C/svg%3E',
         };
       })
