@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
 
     const tavilyData = await tavilyResponse.json();
 
-    // Step 2: Gemma로 실제 이름 추출
+    // Step 2: Gemini 2.5 Flash Lite로 실제 이름 추출
     console.log('🤖 AI로 실제 이름 추출 중...');
-    const model = google('gemma-2-9b-it');
+    const model = google('gemini-2.5-flash-lite');
 
     const result = await generateText({
       model,
